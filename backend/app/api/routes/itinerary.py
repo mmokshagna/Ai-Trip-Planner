@@ -20,7 +20,7 @@ router = APIRouter(tags=["Itinerary"])
 @router.post("/plan-trip", response_model=Itinerary)
 async def plan_trip(payload: dict) -> Itinerary:
     """Generate a new itinerary using OpenAI function calling with contextual data."""
-
+    LOGGER.log("plan my trip")
     destination = str(payload.get("destination", ""))
     start_date = str(payload.get("start_date", ""))
     end_date = str(payload.get("end_date", ""))
