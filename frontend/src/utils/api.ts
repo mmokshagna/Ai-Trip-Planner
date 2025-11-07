@@ -24,6 +24,10 @@ export function sendChatMessage(payload: Record<string, unknown>) {
   return apiClient.post("/chat", payload);
 }
 
+export function fetchMapPins(params: Record<string, string>) {
+  return apiClient.get("/map", { params });
+}
+
 export function saveTrip(payload: Record<string, unknown>) {
   return apiClient.post("/save", payload);
 }

@@ -1,5 +1,8 @@
 """Routes for the travel companion chatbot."""
-from fastapi import APIRouter
+
+from __future__ import annotations
+
+from fastapi import APIRouter, HTTPException, status
 
 from app.services.chat import chat_response
 
@@ -12,5 +15,11 @@ async def chat(payload: dict) -> dict:
 
     message = payload.get("message", "")
     context = payload.get("context", {})
-    response = await chat_response(message, context)
+    try:
+        response = await chat_response(message, context)
+    except Exception as exc:  # pragma: no cover - defensive
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Unable to contact the travel companion at this time.",
+        ) from exc
     return response

@@ -1,23 +1,17 @@
 """GPT-powered travel companion helpers."""
+
+from __future__ import annotations
+
 from typing import Any, Dict
 
-from app.services.openai_client import build_itinerary_prompt
+from app.services.openai_client import build_itinerary_prompt, generate_chat_reply
 
 
 async def chat_response(message: str, context: Dict[str, Any] | None = None) -> Dict[str, Any]:
-    """Return a placeholder chat response.
+    """Return a chat response powered by OpenAI or deterministic fallback."""
 
-    Implementations should call OpenAI with relevant context (e.g., itinerary summary,
-    current location data) and return streamed or synchronous responses for the chat UI.
-    """
-
-    persona = (context or {}).get("persona", "Local Expert")
-    return {
-        "message": (
-            f"({persona}) I received your message: '{message}'. "
-            "This is a placeholder response from the AI travel companion."
-        )
-    }
+    reply = await generate_chat_reply(message, context=context)
+    return {"message": reply}
 
 
 async def itinerary_adjustment_prompt(feedback: str, payload: Dict[str, Any]) -> str:

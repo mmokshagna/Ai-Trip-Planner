@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { CollaborationPanel } from "./CollaborationPanel";
 import { usePlannerContext } from "../context/PlannerContext";
 import { useItinerary } from "../hooks/useItinerary";
@@ -9,10 +10,22 @@ interface TripPlannerLayoutProps {
 }
 
 export function TripPlannerLayout({ persona }: TripPlannerLayoutProps) {
-  const { itinerary, isLoading: itineraryLoading, regenerateItinerary } = useItinerary();
-  const { pins } = useMapPins(itinerary?.destination);
-  const { messages, sendMessage } = useChat();
+  const {
+    itinerary,
+    isLoading: itineraryLoading,
+    error: itineraryError,
+    regenerateItinerary,
+  } = useItinerary(persona);
+  const { pins, isLoading: pinsLoading, error: mapError } = useMapPins(itinerary?.destination);
+  const { messages, sendMessage, isSending: chatSending, error: chatError } = useChat(
+    itinerary,
+    persona
+  );
   const { updatePersona } = usePlannerContext();
+
+  useEffect(() => {
+    updatePersona(persona);
+  }, [persona, updatePersona]);
 
   return (
     <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-6 py-8 lg:grid-cols-[2fr_1fr]">
@@ -25,9 +38,13 @@ export function TripPlannerLayout({ persona }: TripPlannerLayoutProps) {
                 ? "Generating itinerary using GPT..."
                 : itinerary?.summary ?? "Provide trip details to begin planning."}
             </p>
+            {itineraryError ? (
+              <p className="text-xs text-red-400">{itineraryError}</p>
+            ) : null}
           </div>
           <button
             className="self-start rounded-md bg-brand px-4 py-2 text-sm font-semibold text-slate-900"
+            disabled={itineraryLoading}
             onClick={() => {
               updatePersona(persona);
               regenerateItinerary({ persona });
@@ -39,10 +56,14 @@ export function TripPlannerLayout({ persona }: TripPlannerLayoutProps) {
         <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
           <h3 className="text-lg font-medium text-white">Daily Plans</h3>
           <ol className="mt-3 space-y-3 text-sm text-slate-300">
-            {(itinerary?.daily_plans ?? []).length === 0 ? (
+            {itineraryLoading ? (
               <li className="rounded-md border border-dashed border-slate-800 p-3 text-slate-400">
-                Daily plans will appear here after the backend integration parses GPT
-                function call responses.
+                Planning your trip with current events and weather...
+              </li>
+            ) : null}
+            {!itineraryLoading && (itinerary?.daily_plans ?? []).length === 0 ? (
+              <li className="rounded-md border border-dashed border-slate-800 p-3 text-slate-400">
+                Daily plans will appear once the trip is generated.
               </li>
             ) : null}
             {(itinerary?.daily_plans ?? []).map((day) => (
@@ -55,7 +76,7 @@ export function TripPlannerLayout({ persona }: TripPlannerLayoutProps) {
                 </div>
                 <ul className="mt-2 space-y-2">
                   {day.activities.map((activity) => (
-                    <li key={activity.name} className="rounded bg-slate-900/60 p-2">
+                    <li key={`${day.date}-${activity.name}`} className="rounded bg-slate-900/60 p-2">
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="font-medium text-white">{activity.name}</p>
@@ -81,11 +102,26 @@ export function TripPlannerLayout({ persona }: TripPlannerLayoutProps) {
       <aside className="space-y-4">
         <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
           <h3 className="text-lg font-medium text-white">Map Preview</h3>
-          <p className="text-sm text-slate-400">
-            {pins.length === 0
-              ? "Map data will appear here after fetching locations."
-              : "Integrate Mapbox in the frontend to visualize pins."}
-          </p>
+          <div className="text-sm text-slate-400">
+            {pinsLoading ? "Fetching nearby highlights..." : null}
+            {!pinsLoading && pins.length === 0 ? (
+              <p>Map data will appear here after fetching locations.</p>
+            ) : null}
+            {mapError ? <p className="text-xs text-red-400">{mapError}</p> : null}
+            {pins.length > 0 ? (
+              <ul className="mt-3 space-y-2 text-xs text-slate-300">
+                {pins.slice(0, 5).map((pin) => (
+                  <li key={`${pin.name}-${pin.category}`} className="rounded bg-slate-900/60 p-2">
+                    <p className="font-medium text-white">{pin.name}</p>
+                    <p className="text-slate-400">{pin.category}</p>
+                    {pin.description ? (
+                      <p className="text-slate-500">{pin.description}</p>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
         </div>
         <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
           <h3 className="text-lg font-medium text-white">Travel Companion</h3>
@@ -103,11 +139,13 @@ export function TripPlannerLayout({ persona }: TripPlannerLayoutProps) {
               </div>
             ))}
           </div>
+          {chatError ? <p className="text-xs text-red-400">{chatError}</p> : null}
           <button
-            className="mt-3 w-full rounded-md border border-brand bg-transparent px-4 py-2 text-sm font-semibold text-brand"
+            className="mt-3 w-full rounded-md border border-brand bg-transparent px-4 py-2 text-sm font-semibold text-brand disabled:opacity-60"
+            disabled={chatSending}
             onClick={() => sendMessage("What is next on my itinerary?")}
           >
-            Ask Companion
+            {chatSending ? "Contacting companion..." : "Ask Companion"}
           </button>
         </div>
         <CollaborationPanel />
