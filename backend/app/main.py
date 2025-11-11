@@ -3,6 +3,8 @@ from fastapi import FastAPI
 
 from app.api.routes import itinerary, customization, events, weather, chat, maps, storage
 from app.core.config import settings
+from fastapi.middleware.cors import CORSMiddleware
+
 
 
 def create_application() -> FastAPI:
@@ -12,6 +14,15 @@ def create_application() -> FastAPI:
         description="Backend services for the AI-powered trip planning experience.",
         version="0.1.0",
     )
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"], 
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    
 
     application.include_router(itinerary.router, prefix="/api")
     application.include_router(customization.router, prefix="/api")
@@ -25,6 +36,7 @@ def create_application() -> FastAPI:
 
 
 app = create_application()
+
 
 
 @app.get("/health", tags=["Health"])

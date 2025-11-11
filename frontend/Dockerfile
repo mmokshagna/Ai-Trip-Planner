@@ -20,5 +20,5 @@ COPY --from=build /app .
 # EXPOSE 3000
 # EXPOSE 8000
 # EXPOSE 4173
-CMD ["npm", "run", "preview"]
+CMD ["npm", "run", "dev"]
 #CMD ["npx", "vite", "preview", "--host", "0.0.0.0"]
